@@ -109,55 +109,107 @@ function getWeather() {
 function displayWeather(data) {
   const box = document.getElementById("weatherBox");
   
+  // Determine if it's night time
+  const isDay = data.current.is_day === 1;
+  const localTime = new Date(data.location.localtime);
+  const hour = localTime.getHours();
+  
   // Location
   document.getElementById("location").textContent = 
     `${data.location.name}, ${data.location.country}`;
   
-  // Temperature
-  document.getElementById("temp").textContent = 
-    Math.round(data.current.temp_c) + "°C";
+  // Temperature with proper formatting
+  const tempC = Math.round(data.current.temp_c);
+  document.getElementById("temp").textContent = tempC + "°C";
   
   // Feels like temperature
-  document.getElementById("feelsLike").textContent = 
-    Math.round(data.current.feelslike_c) + "°C";
+  const feelsLikeC = Math.round(data.current.feelslike_c);
+  document.getElementById("feelsLike").textContent = feelsLikeC + "°C";
   
   // Condition
-  document.getElementById("condition").textContent = 
-    data.current.condition.text;
+  const conditionText = data.current.condition.text;
+  document.getElementById("condition").textContent = conditionText;
   
-  // Weather icon - ensure it uses HTTPS
-  const iconUrl = data.current.condition.icon.startsWith('//') 
-    ? 'https:' + data.current.condition.icon 
-    : data.current.condition.icon;
-  document.getElementById("icon").src = iconUrl;
+  // Get realistic weather icon
+  const weatherIcon = getWeatherIcon(data.current.condition.code, isDay, conditionText);
+  const iconElement = document.getElementById("icon");
+  iconElement.className = `weather-icon ${weatherIcon.class}`;
+  iconElement.innerHTML = `<i class="${weatherIcon.icon}"></i>`;
   
-  // Humidity
+  // Humidity - with percentage
   document.getElementById("humidity").textContent = 
     data.current.humidity + "%";
   
-  // Wind speed
-  document.getElementById("wind").textContent = 
-    data.current.wind_kph + " km/h";
+  // Wind speed - properly formatted
+  const windKph = Math.round(data.current.wind_kph);
+  document.getElementById("wind").textContent = windKph + " km/h";
   
-  // Pressure
-  document.getElementById("pressure").textContent = 
-    data.current.pressure_mb + " mb";
+  // Pressure - in millibars
+  const pressureMb = Math.round(data.current.pressure_mb);
+  document.getElementById("pressure").textContent = pressureMb + " mb";
   
-  // Visibility
-  document.getElementById("visibility").textContent = 
-    data.current.vis_km + " km";
+  // Visibility - in kilometers
+  const visibilityKm = data.current.vis_km;
+  document.getElementById("visibility").textContent = visibilityKm + " km";
   
-  // Last updated
+  // Last updated - human readable format
   const lastUpdated = new Date(data.current.last_updated);
   const timeAgo = getTimeAgo(lastUpdated);
   document.getElementById("lastUpdate").textContent = 
     `Last updated: ${timeAgo}`;
   
-  // Change background based on weather condition
-  updateBackgroundForWeather(data.current.condition.text);
+  // Update background and theme based on weather and time
+  updateThemeForWeather(conditionText, isDay, hour);
   
   // Show weather box with animation
   box.classList.remove("hidden");
+}
+
+// Get appropriate weather icon based on condition code and time
+function getWeatherIcon(code, isDay, conditionText) {
+  const condition = conditionText.toLowerCase();
+  
+  // Night time icons
+  if (!isDay) {
+    if (condition.includes('clear')) {
+      return { icon: 'fas fa-moon', class: 'night' };
+    } else if (condition.includes('partly cloudy') || condition.includes('partly cloudy')) {
+      return { icon: 'fas fa-cloud-moon', class: 'night' };
+    } else if (condition.includes('cloudy') || condition.includes('overcast')) {
+      return { icon: 'fas fa-cloud', class: 'cloudy' };
+    } else if (condition.includes('rain') || condition.includes('drizzle')) {
+      return { icon: 'fas fa-cloud-showers-heavy', class: 'rainy' };
+    } else if (condition.includes('thunder') || condition.includes('storm')) {
+      return { icon: 'fas fa-bolt', class: 'thunder' };
+    } else if (condition.includes('snow') || condition.includes('blizzard')) {
+      return { icon: 'far fa-snowflake', class: 'snowy' };
+    } else if (condition.includes('mist') || condition.includes('fog')) {
+      return { icon: 'fas fa-smog', class: 'cloudy' };
+    }
+    return { icon: 'fas fa-cloud-moon', class: 'night' };
+  }
+  
+  // Day time icons
+  if (condition.includes('sunny') || condition.includes('clear')) {
+    return { icon: 'fas fa-sun', class: 'sunny' };
+  } else if (condition.includes('partly cloudy')) {
+    return { icon: 'fas fa-cloud-sun', class: 'sunny' };
+  } else if (condition.includes('cloudy') || condition.includes('overcast')) {
+    return { icon: 'fas fa-cloud', class: 'cloudy' };
+  } else if (condition.includes('rain') || condition.includes('drizzle')) {
+    return { icon: 'fas fa-cloud-rain', class: 'rainy' };
+  } else if (condition.includes('thunder') || condition.includes('storm')) {
+    return { icon: 'fas fa-cloud-bolt', class: 'thunder' };
+  } else if (condition.includes('snow') || condition.includes('blizzard')) {
+    return { icon: 'fas fa-snowflake', class: 'snowy' };
+  } else if (condition.includes('mist') || condition.includes('fog') || condition.includes('haze')) {
+    return { icon: 'fas fa-smog', class: 'cloudy' };
+  } else if (condition.includes('wind')) {
+    return { icon: 'fas fa-wind', class: 'cloudy' };
+  }
+  
+  // Default
+  return { icon: 'fas fa-cloud-sun', class: 'sunny' };
 }
 
 // Show error message
@@ -182,60 +234,100 @@ function getTimeAgo(date) {
   return Math.floor(seconds / 86400) + ' days ago';
 }
 
-// Update background based on weather condition
-function updateBackgroundForWeather(condition) {
+// Update background and theme based on weather condition and time
+function updateThemeForWeather(condition, isDay, hour) {
   const body = document.body;
   const lowerCondition = condition.toLowerCase();
   
-  // Remove any existing weather classes
-  body.classList.remove('sunny', 'cloudy', 'rainy', 'snowy', 'night');
+  // Remove all existing weather/time classes
+  body.classList.remove('night-mode', 'clear-day', 'cloudy-day', 'rainy-day', 'snowy-day');
   
+  // Night mode (based on API is_day flag or hour)
+  if (!isDay || hour < 6 || hour >= 20) {
+    body.classList.add('night-mode');
+    return;
+  }
+  
+  // Day time weather-based themes
   if (lowerCondition.includes('sunny') || lowerCondition.includes('clear')) {
-    body.style.backgroundImage = 
-      "url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?w=1920&q=80'), linear-gradient(135deg, rgba(255, 183, 77, 0.9) 0%, rgba(255, 138, 101, 0.9) 100%)";
+    body.classList.add('clear-day');
   } else if (lowerCondition.includes('cloud') || lowerCondition.includes('overcast')) {
-    body.style.backgroundImage = 
-      "url('https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?w=1920&q=80'), linear-gradient(135deg, rgba(108, 117, 125, 0.9) 0%, rgba(73, 80, 87, 0.9) 100%)";
-  } else if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle')) {
-    body.style.backgroundImage = 
-      "url('https://images.unsplash.com/photo-1519692933481-e162a57d6721?w=1920&q=80'), linear-gradient(135deg, rgba(52, 73, 94, 0.9) 0%, rgba(44, 62, 80, 0.9) 100%)";
-  } else if (lowerCondition.includes('snow') || lowerCondition.includes('blizzard')) {
-    body.style.backgroundImage = 
-      "url('https://images.unsplash.com/photo-1491002052546-bf38f186af56?w=1920&q=80'), linear-gradient(135deg, rgba(189, 195, 199, 0.9) 0%, rgba(149, 165, 166, 0.9) 100%)";
-  } else if (lowerCondition.includes('thunder') || lowerCondition.includes('storm')) {
-    body.style.backgroundImage = 
-      "url('https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28?w=1920&q=80'), linear-gradient(135deg, rgba(52, 58, 64, 0.9) 0%, rgba(33, 37, 41, 0.9) 100%)";
+    body.classList.add('cloudy-day');
+  } else if (lowerCondition.includes('rain') || lowerCondition.includes('drizzle') || 
+             lowerCondition.includes('thunder') || lowerCondition.includes('storm')) {
+    body.classList.add('rainy-day');
+  } else if (lowerCondition.includes('snow') || lowerCondition.includes('blizzard') || 
+             lowerCondition.includes('sleet')) {
+    body.classList.add('snowy-day');
   } else if (lowerCondition.includes('mist') || lowerCondition.includes('fog')) {
-    body.style.backgroundImage = 
-      "url('https://images.unsplash.com/photo-1487621167305-5d248087c724?w=1920&q=80'), linear-gradient(135deg, rgba(149, 165, 166, 0.9) 0%, rgba(127, 140, 141, 0.9) 100%)";
+    body.classList.add('cloudy-day');
+  } else {
+    // Default to clear day
+    body.classList.add('clear-day');
   }
 }
 
 // Add some interactive effects
 document.addEventListener('DOMContentLoaded', () => {
-  // Add parallax effect to the app card
-  document.addEventListener('mousemove', (e) => {
-    const card = document.querySelector('.app-card');
-    if (!card) return;
+  // Only add parallax effect on desktop devices
+  if (window.innerWidth > 768 && !('ontouchstart' in window)) {
+    document.addEventListener('mousemove', (e) => {
+      const card = document.querySelector('.app-card');
+      if (!card) return;
+      
+      const rect = card.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      
+      const rotateX = (y - centerY) / 50;
+      const rotateY = (centerX - x) / 50;
+      
+      card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    });
     
-    const rect = card.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
-    
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    
-    const rotateX = (y - centerY) / 50;
-    const rotateY = (centerX - x) / 50;
-    
-    card.style.transform = `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`;
+    // Reset transform when mouse leaves
+    document.addEventListener('mouseleave', () => {
+      const card = document.querySelector('.app-card');
+      if (card) {
+        card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+      }
+    });
+  }
+  
+  // Handle window resize
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      // Reset any transforms on resize
+      const card = document.querySelector('.app-card');
+      if (card) {
+        card.style.transform = '';
+      }
+    }, 250);
   });
   
-  // Reset transform when mouse leaves
-  document.addEventListener('mouseleave', () => {
-    const card = document.querySelector('.app-card');
-    if (card) {
-      card.style.transform = 'perspective(1000px) rotateX(0) rotateY(0)';
+  // Prevent iOS zoom on input focus
+  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
+    const viewport = document.querySelector('meta[name=viewport]');
+    if (viewport) {
+      viewport.setAttribute('content', 
+        'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0');
     }
-  });
+  }
 });
+
+// Optimize scroll performance on mobile
+let ticking = false;
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    window.requestAnimationFrame(() => {
+      // Scroll optimizations can be added here
+      ticking = false;
+    });
+    ticking = true;
+  }
+}, { passive: true });
