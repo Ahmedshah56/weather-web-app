@@ -2,12 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes" />
+  <meta name="description" content="Real-time weather forecast application with beautiful UI" />
+  <meta name="theme-color" content="#667eea" />
   <title>Weather Forecast - Real Time Updates</title>
   <link rel="stylesheet" href="style.css" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/weather-icons/2.0.12/css/weather-icons.min.css">
 </head>
 <body>
   <div class="background-overlay"></div>
@@ -63,7 +67,7 @@
 
         <div class="main-weather">
           <div class="weather-icon-container">
-            <img id="icon" alt="Weather icon"/>
+            <i id="icon" class="weather-icon"></i>
             <div class="weather-glow"></div>
           </div>
           
@@ -140,6 +144,19 @@
 
       <p id="error" class="error-message hidden"></p>
     </div>
+
+    <footer class="footer">
+      <p>Designed & Developed by <span class="developer-name">Ahmed Shah</span></p>
+      <div class="footer-links">
+        <a href="www.linkedin.com/in/ahmed-shah-web-developer-designer" class="footer-link">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+            <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"></path>
+            <rect x="2" y="9" width="4" height="12"></rect>
+            <circle cx="4" cy="4" r="2"></circle>
+          </svg>
+        </a>
+      </div>
+    </footer>
   </div>
 
   <script src="script.js"></script>
