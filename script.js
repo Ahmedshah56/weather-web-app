@@ -5,9 +5,41 @@ document.addEventListener('DOMContentLoaded', () => {
   updateTime();
   setInterval(updateTime, 1000);
   
+  // Set up event listeners
+  setupEventListeners();
+  
   // Try to get user's location on load
   getUserLocation();
 });
+
+// Setup all event listeners
+function setupEventListeners() {
+  const searchButton = document.getElementById('searchButton');
+  const cityInput = document.getElementById('cityInput');
+  
+  // Search button click
+  if (searchButton) {
+    searchButton.addEventListener('click', getWeather);
+  }
+  
+  // Enter key press in input
+  if (cityInput) {
+    cityInput.addEventListener('keypress', function(event) {
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        getWeather();
+      }
+    });
+    
+    // Clear error on input focus
+    cityInput.addEventListener('focus', function() {
+      const error = document.getElementById('error');
+      if (error) {
+        error.classList.add('hidden');
+      }
+    });
+  }
+}
 
 // Update current time display
 function updateTime() {
@@ -20,13 +52,9 @@ function updateTime() {
     minute: '2-digit'
   };
   const timeString = now.toLocaleDateString('en-US', options);
-  document.getElementById('currentTime').textContent = timeString;
-}
-
-// Handle Enter key press in search input
-function handleKeyPress(event) {
-  if (event.key === 'Enter') {
-    getWeather();
+  const timeElement = document.getElementById('currentTime');
+  if (timeElement) {
+    timeElement.textContent = timeString;
   }
 }
 
@@ -68,7 +96,8 @@ function getWeatherByCoords(lat, lon) {
 
 // Main weather fetch function
 function getWeather() {
-  const city = document.getElementById("cityInput").value.trim();
+  const cityInput = document.getElementById("cityInput");
+  const city = cityInput.value.trim();
   const error = document.getElementById("error");
   const box = document.getElementById("weatherBox");
   
@@ -77,13 +106,19 @@ function getWeather() {
   
   if (!city) {
     showError("Please enter a city name");
+    cityInput.focus();
     return;
   }
   
   // Show loading state
-  const searchBtn = document.querySelector('.search-btn span');
-  const originalText = searchBtn.textContent;
-  searchBtn.innerHTML = '<div class="loading"></div>';
+  const searchBtn = document.getElementById('searchButton');
+  const btnText = searchBtn.querySelector('.btn-text');
+  const btnArrow = searchBtn.querySelector('.btn-arrow');
+  const originalText = btnText.textContent;
+  
+  btnText.innerHTML = '<div class="loading"></div>';
+  btnArrow.style.display = 'none';
+  searchBtn.disabled = true;
   
   const url = `https://api.weatherapi.com/v1/current.json?key=${apiKey}&q=${city}`;
   
@@ -96,12 +131,17 @@ function getWeather() {
     })
     .then(data => {
       displayWeather(data);
-      document.getElementById("cityInput").value = '';
-      searchBtn.textContent = originalText;
+      cityInput.value = '';
+      btnText.textContent = originalText;
+      btnArrow.style.display = 'block';
+      searchBtn.disabled = false;
     })
     .catch(err => {
       showError(err.message);
-      searchBtn.textContent = originalText;
+      btnText.textContent = originalText;
+      btnArrow.style.display = 'block';
+      searchBtn.disabled = false;
+      cityInput.focus();
     });
 }
 
